@@ -2,7 +2,11 @@ import { isFullSegmentEncryption } from '../utils/encryption-methods-util';
 import { hexToArrayBuffer } from '../utils/hex';
 import { convertDataUriToArrayBytes } from '../utils/keysystem-util';
 import { logger } from '../utils/logger';
-import { KeySystemFormats, parsePlayReadyWRM } from '../utils/mediakeys-helper';
+import {
+  KeySystemFormats,
+  KeySystems,
+  parsePlayReadyWRM,
+} from '../utils/mediakeys-helper';
 import { mp4pssh } from '../utils/mp4-tools';
 
 let keyUriToKeyIdMap: { [uri: string]: Uint8Array<ArrayBuffer> } = {};
@@ -74,7 +78,11 @@ export class LevelKey implements DecryptData {
       if (isFullSegmentEncryption(this.method) || this.method === 'NONE') {
         return true;
       }
-      if (this.keyFormat === 'identity') {
+      if (
+        this.keyFormat === 'identity' ||
+        this.keyFormat === KeySystems.URLKEY ||
+        this.keyFormat === KeySystemFormats.URLKEY
+      ) {
         // Maintain support for clear SAMPLE-AES with MPEG-3 TS
         return this.method === 'SAMPLE-AES';
       } else if (__USE_EME_DRM__) {

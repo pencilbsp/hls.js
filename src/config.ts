@@ -19,6 +19,7 @@ import { stringify } from './utils/safe-json-stringify';
 import XhrLoader from './utils/xhr-loader';
 import type { MediaKeySessionContext } from './controller/eme-controller';
 import type Hls from './hls';
+import type { Fragment } from './loader/fragment';
 import type {
   FragmentLoaderContext,
   Loader,
@@ -85,9 +86,16 @@ export type DRMSystemOptions = {
   sessionType?: string;
 };
 
+export type FlushOptions = {
+  metadata?: string;
+  [key: string]: any;
+};
+
 export type DRMSystemConfiguration = {
   licenseUrl: string;
   serverCertificateUrl?: string;
+  generic?: () => string;
+  flush?: (frag: Fragment, options: FlushOptions, callback: void) => Fragment;
   generateRequest?: (
     this: Hls,
     initDataType: string,
@@ -97,6 +105,8 @@ export type DRMSystemConfiguration = {
     | { initDataType: string; initData: ArrayBuffer | null }
     | undefined
     | never;
+
+  [key: string]: any;
 };
 
 export type DRMSystemsConfiguration = Partial<
@@ -433,7 +443,7 @@ export const hlsDefaultConfig: HlsConfig = {
   maxStarvationDelay: 4, // used by abr-controller
   maxLoadingDelay: 4, // used by abr-controller
   minAutoBitrate: 0, // used by hls
-  emeEnabled: false, // used by eme-controller
+  emeEnabled: true, // used by eme-controller
   widevineLicenseUrl: undefined, // used by eme-controller
   drmSystems: {}, // used by eme-controller
   drmSystemOptions: {}, // used by eme-controller

@@ -11,6 +11,7 @@ export const enum KeySystems {
   FAIRPLAY = 'com.apple.fps',
   PLAYREADY = 'com.microsoft.playready',
   WIDEVINE = 'com.widevine.alpha',
+  URLKEY = 'url.streamingkeydelivery',
 }
 
 // Playlist #EXT-X-KEY KEYFORMAT values
@@ -19,6 +20,7 @@ export const enum KeySystemFormats {
   FAIRPLAY = 'com.apple.streamingkeydelivery',
   PLAYREADY = 'com.microsoft.playready',
   WIDEVINE = 'urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed',
+  URLKEY = 'urn:uuid:2dfa3a2e-bb7a-447d-a7b1-3d15b81f5b62',
 }
 
 export function keySystemFormatToKeySystemDomain(
@@ -33,6 +35,8 @@ export function keySystemFormatToKeySystemDomain(
       return KeySystems.WIDEVINE;
     case KeySystemFormats.CLEARKEY:
       return KeySystems.CLEARKEY;
+    case KeySystemFormats.URLKEY:
+      return KeySystems.URLKEY;
   }
 }
 
@@ -43,6 +47,7 @@ export const enum KeySystemIds {
   FAIRPLAY = '94ce86fb07ff4f43adb893d2fa968ca2',
   PLAYREADY = '9a04f07998404286ab92e65be0885f95',
   WIDEVINE = 'edef8ba979d64acea3c827dcd51d21ed',
+  URLKEY = '2dfa3a2ebb7a447da7b1-3d15b81f5b62',
 }
 
 export function keySystemIdToKeySystemDomain(
@@ -50,6 +55,8 @@ export function keySystemIdToKeySystemDomain(
 ): KeySystems | undefined {
   if (systemId === KeySystemIds.WIDEVINE) {
     return KeySystems.WIDEVINE;
+  } else if (systemId === KeySystemIds.URLKEY) {
+    return KeySystems.URLKEY;
   } else if (systemId === KeySystemIds.PLAYREADY) {
     return KeySystems.PLAYREADY;
   } else if (
@@ -72,6 +79,8 @@ export function keySystemDomainToKeySystemFormat(
       return KeySystemFormats.WIDEVINE;
     case KeySystems.CLEARKEY:
       return KeySystemFormats.CLEARKEY;
+    case KeySystems.URLKEY:
+      return KeySystemFormats.URLKEY;
   }
 }
 
@@ -85,6 +94,7 @@ export function getKeySystemsForConfig(
         KeySystems.WIDEVINE,
         KeySystems.PLAYREADY,
         KeySystems.CLEARKEY,
+        KeySystems.URLKEY,
       ].filter((keySystem) => !!drmSystems[keySystem])
     : [];
   if (!keySystemsToAttempt[KeySystems.WIDEVINE] && widevineLicenseUrl) {
@@ -120,6 +130,7 @@ export function getSupportedMediaKeySystemConfigurations(
     case KeySystems.FAIRPLAY:
       initDataTypes = ['cenc', 'sinf'];
       break;
+    case KeySystems.URLKEY:
     case KeySystems.WIDEVINE:
     case KeySystems.PLAYREADY:
       initDataTypes = ['cenc'];

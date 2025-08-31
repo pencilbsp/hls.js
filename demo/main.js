@@ -27,10 +27,21 @@ if (demoConfig) {
 }
 
 const hlsjsDefaults = {
-  debug: true,
+  debug: false,
   enableWorker: true,
   lowLatencyMode: true,
   backBufferLength: 60 * 1.5,
+  drmSystems: {
+    'url.streamingkeydelivery': {
+      generic: () => 'sjhfkl',
+      // flush: (frag, options, callback) => {
+      //   // console.log('Custom flush for url.streamingkeydelivery', frag, options);
+      //   frag.url = frag.url + '?test=true'; // url will be used by default
+      //   frag.relurl = frag.relurl + '?test=true'; // url will be used by default
+      //   return frag;
+      // },
+    },
+  },
 };
 
 let enableStreaming = getDemoConfigPropOrDefault('enableStreaming', true);
@@ -331,11 +342,7 @@ function loadSelectedStream() {
   logStatus('Loading ' + url);
 
   // Extending both a demo-specific config and the user config which can override all
-  const hlsConfig = $.extend(
-    {},
-    hlsjsDefaults,
-    getEditorValue({ parse: true })
-  );
+  const hlsConfig = hlsjsDefaults;
 
   if (selectedTestStream && selectedTestStream.config) {
     console.info(

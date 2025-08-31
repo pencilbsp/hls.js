@@ -1098,10 +1098,13 @@ export const enum DecrypterAesMode {
 export type DRMSystemConfiguration = {
     licenseUrl: string;
     serverCertificateUrl?: string;
+    generic?: () => string;
+    flush?: (frag: Fragment, options: FlushOptions, callback: void) => Fragment;
     generateRequest?: (this: Hls, initDataType: string, initData: ArrayBuffer | null, keyContext: MediaKeySessionContext) => {
         initDataType: string;
         initData: ArrayBuffer | null;
     } | undefined | never;
+    [key: string]: any;
 };
 
 // Warning: (ae-missing-release-tag) "DRMSystemOptions" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
@@ -3049,6 +3052,8 @@ export const enum KeySystemFormats {
     // (undocumented)
     PLAYREADY = "com.microsoft.playready",
     // (undocumented)
+    URLKEY = "urn:uuid:2dfa3a2e-bb7a-447d-a7b1-3d15b81f5b62",
+    // (undocumented)
     WIDEVINE = "urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
 }
 
@@ -3062,6 +3067,8 @@ export const enum KeySystems {
     FAIRPLAY = "com.apple.fps",
     // (undocumented)
     PLAYREADY = "com.microsoft.playready",
+    // (undocumented)
+    URLKEY = "url.streamingkeydelivery",
     // (undocumented)
     WIDEVINE = "com.widevine.alpha"
 }
@@ -3612,6 +3619,8 @@ export interface LoaderConfiguration {
 //
 // @public (undocumented)
 export interface LoaderContext {
+    // (undocumented)
+    frag?: Fragment;
     // (undocumented)
     headers?: Record<string, string>;
     // (undocumented)
@@ -4991,6 +5000,10 @@ export class XhrLoader implements Loader<LoaderContext> {
     // (undocumented)
     stats: LoaderStats;
 }
+
+// Warnings were encountered during analysis:
+//
+// src/config.ts:98:3 - (ae-forgotten-export) The symbol "FlushOptions" needs to be exported by the entry point hls.d.ts
 
 // (No @packageDocumentation comment for this package)
 

@@ -62,6 +62,11 @@ export interface MediaKeySessionContext {
   _onkeystatuseschange?: (this: MediaKeySession, ev: Event) => any;
 }
 
+interface FakeMediaKeys extends MediaKeys {
+  generic?: () => string;
+  [key: string]: any;
+}
+
 /**
  * Controller to deal with encrypted media extensions (EME)
  * @see https://developer.mozilla.org/en-US/docs/Web/API/Encrypted_Media_Extensions_API
@@ -253,57 +258,104 @@ class EMEController extends Logger implements ComponentAPI {
       this.keySystemAccessPromises[keySystem];
     let keySystemAccess = keySystemAccessPromises?.keySystemAccess;
     if (!keySystemAccess) {
-      this.log(
-        `Requesting encrypted media "${keySystem}" key-system access with config: ${stringify(
-          mediaKeySystemConfigs,
-        )}`,
-      );
-      keySystemAccess = this.requestMediaKeySystemAccess(
-        keySystem,
-        mediaKeySystemConfigs,
-      );
-      const keySystemAccessPromises: KeySystemAccessPromises =
-        (this.keySystemAccessPromises[keySystem] = {
-          keySystemAccess,
-        });
-      keySystemAccess.catch((error) => {
-        this.log(
-          `Failed to obtain access to key-system "${keySystem}": ${error}`,
-        );
-      });
-      return keySystemAccess.then((mediaKeySystemAccess) => {
-        this.log(
-          `Access for key-system "${mediaKeySystemAccess.keySystem}" obtained`,
-        );
+      if (keySystem === KeySystems.URLKEY) {
+        const stubAccess: MediaKeySystemAccess = {
+          keySystem, // biến keySystem đã có sẵn trong scope của bạn
+          getConfiguration(): MediaKeySystemConfiguration {
+            // tất cả field của MediaKeySystemConfiguration đều optional → có thể trả về {}
+            return {};
+          },
+          createMediaKeys(): Promise<MediaKeys> {
+            // URLKEY mock: không tạo MediaKeys thực → reject để tránh setMediaKeys với object giả
+            return Promise.reject(
+              new Error('URLKEY stub: createMediaKeys is not supported'),
+            );
+          },
+        };
 
-        const certificateRequest = this.fetchServerCertificate(keySystem);
-
-        this.log(`Create media-keys for "${keySystem}"`);
-        keySystemAccessPromises.mediaKeys = mediaKeySystemAccess
-          .createMediaKeys()
-          .then((mediaKeys) => {
-            this.log(`Media-keys created for "${keySystem}"`);
-            keySystemAccessPromises.hasMediaKeys = true;
-            return certificateRequest.then((certificate) => {
-              if (certificate) {
-                return this.setMediaKeysServerCertificate(
-                  mediaKeys,
-                  keySystem,
-                  certificate,
-                );
-              }
-              return mediaKeys;
-            });
+        const keySystemAccessPromises: KeySystemAccessPromises =
+          (this.keySystemAccessPromises[keySystem] = {
+            keySystemAccess: Promise.resolve(stubAccess),
           });
+        // Fake MediaKeys đủ interface để Hls.js không crash
 
-        keySystemAccessPromises.mediaKeys.catch((error) => {
-          this.error(
-            `Failed to create media-keys for "${keySystem}"}: ${error}`,
-          );
-        });
+        const fakeMediaKeys: FakeMediaKeys = {
+          createSession: () => {
+            const fakeSession: MediaKeySession =
+              {} as unknown as MediaKeySession;
+            return fakeSession;
+          },
+          setServerCertificate: async () => true,
+          generic: this.config.drmSystems[keySystem]?.generic,
+          getStatusForPolicy: async (_policy?: MediaKeysPolicy) => {
+            // Return a default status, e.g., 'usable'
+            return 'usable';
+          },
+        };
+
+        if (fakeMediaKeys.generic) {
+          const name = fakeMediaKeys.generic();
+          fakeMediaKeys[name] = this.config.drmSystems[keySystem]?.flush;
+        }
+
+        keySystemAccessPromises.mediaKeys = Promise.resolve(fakeMediaKeys);
+        keySystemAccessPromises.hasMediaKeys = true;
 
         return keySystemAccessPromises.mediaKeys;
-      });
+      } else {
+        this.log(
+          `Requesting encrypted media "${keySystem}" key-system access with config: ${stringify(
+            mediaKeySystemConfigs,
+          )}`,
+        );
+
+        keySystemAccess = this.requestMediaKeySystemAccess(
+          keySystem,
+          mediaKeySystemConfigs,
+        );
+        const keySystemAccessPromises: KeySystemAccessPromises =
+          (this.keySystemAccessPromises[keySystem] = {
+            keySystemAccess,
+          });
+        keySystemAccess.catch((error) => {
+          this.log(
+            `Failed to obtain access to key-system "${keySystem}": ${error}`,
+          );
+        });
+        return keySystemAccess.then((mediaKeySystemAccess) => {
+          this.log(
+            `Access for key-system "${mediaKeySystemAccess.keySystem}" obtained`,
+          );
+
+          const certificateRequest = this.fetchServerCertificate(keySystem);
+
+          this.log(`Create media-keys for "${keySystem}"`);
+          keySystemAccessPromises.mediaKeys = mediaKeySystemAccess
+            .createMediaKeys()
+            .then((mediaKeys) => {
+              this.log(`Media-keys created for "${keySystem}"`);
+              keySystemAccessPromises.hasMediaKeys = true;
+              return certificateRequest.then((certificate) => {
+                if (certificate) {
+                  return this.setMediaKeysServerCertificate(
+                    mediaKeys,
+                    keySystem,
+                    certificate,
+                  );
+                }
+                return mediaKeys;
+              });
+            });
+
+          keySystemAccessPromises.mediaKeys.catch((error) => {
+            this.error(
+              `Failed to create media-keys for "${keySystem}"}: ${error}`,
+            );
+          });
+
+          return keySystemAccessPromises.mediaKeys;
+        });
+      }
     }
     return keySystemAccess.then(() => keySystemAccessPromises.mediaKeys!);
   }
@@ -443,7 +495,6 @@ class EMEController extends Logger implements ComponentAPI {
       .filter(
         (value) => !!value && keySystemsInConfig.indexOf(value) !== -1,
       ) as any as KeySystems[];
-
     return this.selectKeySystem(keySystemsToAttempt);
   }
 
@@ -661,7 +712,7 @@ class EMEController extends Logger implements ComponentAPI {
     keySystem: KeySystems,
     mediaKeys: MediaKeys,
   ): Promise<void> {
-    if (this.mediaKeys === mediaKeys) {
+    if (this.mediaKeys === mediaKeys || keySystem === KeySystems.URLKEY) {
       return Promise.resolve();
     }
     const queue = this.setMediaKeysQueue.slice();

@@ -19,6 +19,7 @@ export interface LoaderContext {
   rangeEnd?: number;
   // true if onProgress should report partial chunk of loaded content
   progressData?: boolean;
+  frag?: Fragment;
 }
 
 export interface FragmentLoaderContext extends LoaderContext {

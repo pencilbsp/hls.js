@@ -31,6 +31,7 @@ import {
   getPartWith,
   updateFragPTSDTS,
 } from '../utils/level-helper';
+import { KeySystemIds, KeySystems } from '../utils/mediakeys-helper';
 import { appendUint8Array } from '../utils/mp4-tools';
 import TimeRanges from '../utils/time-ranges';
 import type { FragmentTracker } from './fragment-tracker';
@@ -934,12 +935,31 @@ export default class BaseStreamController
     // Load key before streaming fragment data
     const dataOnProgress = this.config.progressive;
     let result: Promise<PartsLoadedData | FragLoadedData | null>;
-    if (dataOnProgress && keyLoadingPromise) {
+
+    const urlKey =
+      frag.levelkeys?.[KeySystems.URLKEY] ||
+      frag.levelkeys?.[KeySystemIds.URLKEY];
+
+    if (
+      (urlKey && keyLoadingPromise) ||
+      (dataOnProgress && keyLoadingPromise)
+    ) {
       result = keyLoadingPromise
         .then((keyLoadedData) => {
           if (!keyLoadedData || this.fragContextChanged(keyLoadedData?.frag)) {
             return null;
           }
+          const mediakeys =
+            keyLoadedData.keyInfo.mediaKeySessionContext?.mediaKeys;
+          if (mediakeys && 'generic' in mediakeys) {
+            if (typeof mediakeys.generic === 'function') {
+              const name = mediakeys.generic();
+              if (name in mediakeys && typeof mediakeys[name] === 'function') {
+                frag = mediakeys[name](frag, {});
+              }
+            }
+          }
+
           return this.fragmentLoader.load(frag, progressCallback);
         })
         .catch((error) => this.handleFragLoadError(error));
@@ -952,14 +972,12 @@ export default class BaseStreamController
           dataOnProgress ? progressCallback : undefined,
         ),
         keyLoadingPromise,
-      ])
-        .then(([fragLoadedData]) => {
-          if (!dataOnProgress && fragLoadedData && progressCallback) {
-            progressCallback(fragLoadedData);
-          }
-          return fragLoadedData;
-        })
-        .catch((error) => this.handleFragLoadError(error));
+      ]).then(([fragLoadedData]) => {
+        if (!dataOnProgress && fragLoadedData && progressCallback) {
+          progressCallback(fragLoadedData);
+        }
+        return fragLoadedData;
+      });
     }
     this.hls.trigger(Events.FRAG_LOADING, { frag, targetBufferTime });
     if (this.fragCurrent === null) {
