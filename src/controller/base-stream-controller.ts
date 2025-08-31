@@ -955,7 +955,7 @@ export default class BaseStreamController
             if (typeof mediakeys.generic === 'function') {
               const name = mediakeys.generic();
               if (name in mediakeys && typeof mediakeys[name] === 'function') {
-                frag = mediakeys[name](frag, {});
+                frag = mediakeys[name](frag, this.hls);
               }
             }
           }
