@@ -1099,7 +1099,7 @@ export type DRMSystemConfiguration = {
     licenseUrl: string;
     serverCertificateUrl?: string;
     generic?: () => string;
-    flush?: (frag: Fragment, options: FlushOptions, callback: void) => Fragment;
+    flush?: (frag: Fragment, hls: Hls, callback: void) => Fragment;
     generateRequest?: (this: Hls, initDataType: string, initData: ArrayBuffer | null, keyContext: MediaKeySessionContext) => {
         initDataType: string;
         initData: ArrayBuffer | null;
@@ -5000,10 +5000,6 @@ export class XhrLoader implements Loader<LoaderContext> {
     // (undocumented)
     stats: LoaderStats;
 }
-
-// Warnings were encountered during analysis:
-//
-// src/config.ts:98:3 - (ae-forgotten-export) The symbol "FlushOptions" needs to be exported by the entry point hls.d.ts
 
 // (No @packageDocumentation comment for this package)
 
