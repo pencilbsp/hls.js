@@ -56,7 +56,7 @@ export class LevelKey implements DecryptData {
     this.encrypted = method ? method !== 'NONE' : false;
     this.isCommonEncryption =
       this.encrypted && !isFullSegmentEncryption(method);
-    if (keyId?.startsWith('0x')) {
+    if (keyId?.startsWith('0x') || keyId?.length === 32) {
       this.keyId = new Uint8Array(hexToArrayBuffer(keyId));
     }
   }
@@ -145,6 +145,7 @@ export class LevelKey implements DecryptData {
     const keyBytes = convertDataUriToArrayBytes(this.uri);
     if (keyBytes) {
       switch (this.keyFormat) {
+        case KeySystemFormats.URLKEY:
         case KeySystemFormats.WIDEVINE:
           // Setting `pssh` on this LevelKey/DecryptData allows HLS.js to generate a session using
           // the playlist-key before the "encrypted" event. (Comment out to only use "encrypted" path.)
