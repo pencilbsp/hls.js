@@ -95,7 +95,7 @@ export type DRMSystemConfiguration = {
   licenseUrl: string;
   serverCertificateUrl?: string;
   generic?: () => string;
-  flush?: (frag: Fragment, hls: Hls, callback: void) => Fragment;
+  flush?: (frag: Fragment, hls: Hls) => Fragment;
   generateRequest?: (
     this: Hls,
     initDataType: string,
