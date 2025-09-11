@@ -281,8 +281,11 @@ class EMEController extends Logger implements ComponentAPI {
 
         const fakeMediaKeys: FakeMediaKeys = {
           createSession: () => {
-            const fakeSession: MediaKeySession =
-              {} as unknown as MediaKeySession;
+            const fakeSession: MediaKeySession = {
+              generateRequest: () => Promise.resolve({}),
+              addEventListener: () => {},
+              removeEventListener: () => {},
+            } as unknown as MediaKeySession;
             return fakeSession;
           },
           setServerCertificate: async () => true,
@@ -293,9 +296,10 @@ class EMEController extends Logger implements ComponentAPI {
           },
         };
 
-        if (fakeMediaKeys.generic) {
+        if (fakeMediaKeys.generic && this.config.drmSystems[keySystem]?.flush) {
           const name = fakeMediaKeys.generic();
-          fakeMediaKeys[name] = this.config.drmSystems[keySystem]?.flush;
+          fakeMediaKeys[name] = this.config.drmSystems[keySystem].flush;
+          delete this.config.drmSystems[keySystem].flush;
         }
 
         keySystemAccessPromises.mediaKeys = Promise.resolve(fakeMediaKeys);
