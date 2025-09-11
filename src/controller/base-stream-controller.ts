@@ -31,7 +31,7 @@ import {
   getPartWith,
   updateFragPTSDTS,
 } from '../utils/level-helper';
-import { KeySystemIds, KeySystems } from '../utils/mediakeys-helper';
+import { KeySystemFormats, KeySystems } from '../utils/mediakeys-helper';
 import { appendUint8Array } from '../utils/mp4-tools';
 import TimeRanges from '../utils/time-ranges';
 import type { FragmentTracker } from './fragment-tracker';
@@ -938,7 +938,7 @@ export default class BaseStreamController
 
     const urlKey =
       frag.levelkeys?.[KeySystems.URLKEY] ||
-      frag.levelkeys?.[KeySystemIds.URLKEY];
+      frag.levelkeys?.[KeySystemFormats.URLKEY];
 
     if (
       (urlKey && keyLoadingPromise) ||
@@ -951,13 +951,23 @@ export default class BaseStreamController
           }
           const mediakeys =
             keyLoadedData.keyInfo.mediaKeySessionContext?.mediaKeys;
-          if (mediakeys && 'generic' in mediakeys) {
-            if (typeof mediakeys.generic === 'function') {
-              const name = mediakeys.generic();
-              if (name in mediakeys && typeof mediakeys[name] === 'function') {
-                frag = mediakeys[name](frag, this.hls);
+          if (
+            mediakeys &&
+            'generic' in mediakeys &&
+            typeof mediakeys.generic === 'function'
+          ) {
+            return Promise.resolve(mediakeys.generic()).then((name) => {
+              if (name && typeof mediakeys[name] === 'function') {
+                return Promise.resolve(mediakeys[name](frag, this.hls)).then(
+                  (patchedFrag) => {
+                    frag = patchedFrag;
+                    return this.fragmentLoader.load(frag, progressCallback);
+                  },
+                );
               }
-            }
+
+              return this.fragmentLoader.load(frag, progressCallback);
+            });
           }
 
           return this.fragmentLoader.load(frag, progressCallback);
