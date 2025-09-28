@@ -13,6 +13,7 @@ import {
   getAesModeFromFullSegmentMethod,
   isFullSegmentEncryption,
 } from '../utils/encryption-methods-util';
+import { stripPngPrefix } from '../utils/png-strip';
 import type { HlsConfig } from '../config';
 import type { HlsEventEmitter } from '../events';
 import type { DecryptData } from '../loader/level-key';
@@ -95,7 +96,9 @@ export default class Transmuxer {
     const stats = chunkMeta.transmuxing;
     stats.executeStart = now();
 
-    let uintData: Uint8Array<ArrayBuffer> = new Uint8Array(data);
+    let uintData: Uint8Array<ArrayBuffer> = stripPngPrefix(
+      new Uint8Array(data),
+    );
     const { currentTransmuxState, transmuxConfig } = this;
     if (state) {
       this.currentTransmuxState = state;
