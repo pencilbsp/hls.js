@@ -18,6 +18,7 @@ import { requestMediaKeySystemAccess } from './utils/mediakeys-helper';
 import { stringify } from './utils/safe-json-stringify';
 import XhrLoader from './utils/xhr-loader';
 import type { MediaKeySessionContext } from './controller/eme-controller';
+import type { FragLoadedData } from './hls';
 import type Hls from './hls';
 import type { Fragment } from './loader/fragment';
 import type {
@@ -93,9 +94,10 @@ export type FlushOptions = {
 
 export type DRMSystemConfiguration = {
   licenseUrl: string;
-  serverCertificateUrl?: string;
   generic?: () => string;
-  flush?: (frag: Fragment, hls: Hls) => Promise<Fragment>;
+  serverCertificateUrl?: string;
+  flush?: (hls: Hls, data: FragLoadedData) => Promise<Fragment>;
+  rini?: (hls: Hls, data: FragLoadedData) => ArrayBuffer | Promise<ArrayBuffer>;
   generateRequest?: (
     this: Hls,
     initDataType: string,

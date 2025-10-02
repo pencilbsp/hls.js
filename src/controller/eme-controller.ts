@@ -289,17 +289,23 @@ class EMEController extends Logger implements ComponentAPI {
             return fakeSession;
           },
           setServerCertificate: async () => true,
-          generic: this.config.drmSystems[keySystem]?.generic,
           getStatusForPolicy: async (_policy?: MediaKeysPolicy) => {
             // Return a default status, e.g., 'usable'
             return 'usable';
           },
         };
 
-        if (fakeMediaKeys.generic && this.config.drmSystems[keySystem]?.flush) {
-          const name = fakeMediaKeys.generic();
-          fakeMediaKeys[name] = this.config.drmSystems[keySystem].flush;
-          delete this.config.drmSystems[keySystem].flush;
+        if (this.config.drmSystems?.[keySystem]) {
+          if (this.config.drmSystems[keySystem].generic) {
+            fakeMediaKeys.generic = this.config.drmSystems[keySystem].generic;
+            delete this.config.drmSystems[keySystem].generic;
+
+            if (this.config.drmSystems[keySystem].flush) {
+              const name = fakeMediaKeys.generic();
+              fakeMediaKeys[name] = this.config.drmSystems[keySystem].flush;
+              delete this.config.drmSystems[keySystem].flush;
+            }
+          }
         }
 
         keySystemAccessPromises.mediaKeys = Promise.resolve(fakeMediaKeys);

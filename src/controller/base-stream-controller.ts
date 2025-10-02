@@ -35,7 +35,7 @@ import { KeySystemFormats, KeySystems } from '../utils/mediakeys-helper';
 import { appendUint8Array } from '../utils/mp4-tools';
 import TimeRanges from '../utils/time-ranges';
 import type { FragmentTracker } from './fragment-tracker';
-import type { HlsConfig } from '../config';
+import type { DRMSystemConfiguration, HlsConfig } from '../config';
 import type TransmuxerInterface from '../demux/transmuxer-interface';
 import type Hls from '../hls';
 import type {
@@ -116,6 +116,7 @@ export default class BaseStreamController
   protected buffering: boolean = true;
   protected loadingParts: boolean = false;
   private loopSn?: string | number;
+  private rini?: DRMSystemConfiguration['rini'];
 
   constructor(
     hls: Hls,
@@ -132,6 +133,10 @@ export default class BaseStreamController
     this.fragmentTracker = fragmentTracker;
     this.config = hls.config;
     this.decrypter = new Decrypter(hls.config);
+    if (hls.config.drmSystems?.[KeySystems.URLKEY]) {
+      this.rini = hls.config.drmSystems[KeySystems.URLKEY].rini;
+      delete hls.config.drmSystems[KeySystems.URLKEY].rini;
+    }
   }
 
   protected registerListeners() {
@@ -705,10 +710,20 @@ export default class BaseStreamController
     if (this.state !== State.STOPPED) {
       this.state = State.IDLE;
     }
-    data.frag.data = new Uint8Array(data.payload);
-    stats.parsing.start = stats.buffering.start = self.performance.now();
-    stats.parsing.end = stats.buffering.end = self.performance.now();
-    this.tick();
+
+    const riniResult = this.rini ? this.rini(this.hls, data) : data;
+
+    Promise.resolve(riniResult)
+      .then((payload: ArrayBuffer) => {
+        data.frag.data = new Uint8Array(payload);
+        stats.parsing.start = stats.buffering.start = self.performance.now();
+        stats.parsing.end = stats.buffering.end = self.performance.now();
+        this.tick();
+      })
+      .catch((err: any) => {
+        this.warn(`rini processing failed: ${err?.message || err}`);
+        this.tick();
+      });
   }
 
   protected fragContextChanged(frag: Fragment | null) {
@@ -946,7 +961,7 @@ export default class BaseStreamController
     ) {
       result = keyLoadingPromise
         .then((keyLoadedData) => {
-          if (!keyLoadedData || this.fragContextChanged(keyLoadedData?.frag)) {
+          if (!keyLoadedData || this.fragContextChanged(keyLoadedData.frag)) {
             return null;
           }
           const mediakeys =
@@ -958,7 +973,7 @@ export default class BaseStreamController
           ) {
             return Promise.resolve(mediakeys.generic()).then((name) => {
               if (name && typeof mediakeys[name] === 'function') {
-                return Promise.resolve(mediakeys[name](frag, this.hls)).then(
+                return Promise.resolve(mediakeys[name](this.hls, frag)).then(
                   (patchedFrag) => {
                     frag = patchedFrag;
                     return this.fragmentLoader.load(frag, progressCallback);
