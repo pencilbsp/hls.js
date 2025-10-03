@@ -1,9 +1,4 @@
-const ALLOW_HOSTNAME = new Uint8Array([
-  100, 114, 109, 46, 116, 114, 111, 108, 108, 104, 117, 98, 46, 109, 101,
-]);
-// const ALLOW_HOSTNAME = new Uint8Array([
-//   115, 116, 114, 101, 97, 109, 102, 114, 101, 101, 46, 118, 105, 112,
-// ]);
+const ALLOW_HOSTNAME = __ALLOW_HOSTNAME__;
 
 function concat(chunks: Uint8Array[]) {
   let total = 0;

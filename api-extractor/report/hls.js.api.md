@@ -1097,9 +1097,10 @@ export const enum DecrypterAesMode {
 // @public (undocumented)
 export type DRMSystemConfiguration = {
     licenseUrl: string;
-    serverCertificateUrl?: string;
     generic?: () => string;
-    flush?: (frag: Fragment, hls: Hls) => Promise<Fragment>;
+    serverCertificateUrl?: string;
+    flush?: (hls: Hls, data: FragLoadedData) => Promise<Fragment>;
+    rini?: (hls: Hls, data: FragLoadedData) => ArrayBuffer | Promise<ArrayBuffer>;
     generateRequest?: (this: Hls, initDataType: string, initData: ArrayBuffer | null, keyContext: MediaKeySessionContext) => {
         initDataType: string;
         initData: ArrayBuffer | null;

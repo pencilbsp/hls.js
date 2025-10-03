@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const importHelper = require('@babel/helper-module-imports');
 const { nodeResolve } = require('@rollup/plugin-node-resolve');
@@ -7,7 +8,35 @@ const alias = require('@rollup/plugin-alias');
 const replace = require('@rollup/plugin-replace');
 const terser = require('@rollup/plugin-terser');
 const istanbul = require('rollup-plugin-istanbul');
-const fs = require('fs');
+
+(function loadEnv(file = '.env') {
+  const filePath = path.resolve(process.cwd(), file);
+  if (!fs.existsSync(filePath)) return;
+
+  const content = fs.readFileSync(filePath, 'utf8');
+  content.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return; // bỏ comment/empty
+
+    const idx = trimmed.indexOf('=');
+    if (idx === -1) return;
+
+    const key = trimmed.slice(0, idx).trim();
+    let value = trimmed.slice(idx + 1).trim();
+
+    // bỏ dấu nháy nếu có
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (!(key in process.env)) {
+      process.env[key] = value;
+    }
+  });
+})();
 
 const pkgJson = JSON.parse(
   fs.readFileSync('./package.json', { encoding: 'utf-8' }),
@@ -46,6 +75,9 @@ const addM2TSAdvancedCodecSupport =
 const addMediaCapabilitiesSupport =
   !!env.MEDIA_CAPABILITIES || !!env.USE_MEDIA_CAPABILITIES;
 const addInterstitialSupport = !!env.INTERSTITALS || !!env.USE_INTERSTITALS;
+const allowHostname = new TextEncoder()
+  .encode(env.ALLOW_HOSTNAME || 'localhost')
+  .toString();
 
 const shouldBundleWorker = (format) => format !== FORMAT.esm;
 
@@ -76,7 +108,7 @@ const buildConstants = (type, additional = {}) => ({
     __USE_INTERSTITIALS__: JSON.stringify(
       type === BUILD_TYPE.full || addInterstitialSupport,
     ),
-
+    __ALLOW_HOSTNAME__: `new Uint8Array([${allowHostname}])`,
     ...additional,
   },
 });
