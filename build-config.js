@@ -11,7 +11,7 @@ const terser = require('@rollup/plugin-terser');
 const istanbul = require('rollup-plugin-istanbul');
 
 (function loadEnv(file = '.env') {
-  const filePath = path.resolve(process.cwd(), file);
+  const filePath = path.resolve(__dirname, file);
   if (!fs.existsSync(filePath)) return;
 
   const content = fs.readFileSync(filePath, 'utf8');
