@@ -184,6 +184,8 @@ export class Fragment extends BaseSegment {
   public loader: Loader<FragmentLoaderContext> | null = null;
   // A reference to the key loader. Set while the key is loading, and removed afterwards. Used to abort key loading
   public keyLoader: Loader<KeyLoaderContext> | null = null;
+  // Optional init segment payload configured via hlsOptions
+  public configuredInitSegmentData?: Uint8Array;
   // The level/track index to which the fragment belongs
   public level: number = -1;
   // The continuity counter of the fragment

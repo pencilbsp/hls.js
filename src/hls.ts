@@ -331,6 +331,15 @@ export default class Hls implements HlsEventEmitter {
       playListLoader.onManifestLoaded,
       playListLoader,
     );
+
+    const { onHlsInit } = config;
+    if (onHlsInit) {
+      try {
+        onHlsInit(this);
+      } catch (error) {
+        this.logger.error('[config]: onHlsInit callback threw an error', error);
+      }
+    }
   }
 
   createController(ControllerClass, components) {

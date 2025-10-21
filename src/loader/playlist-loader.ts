@@ -6,14 +6,21 @@
  * Uses loader(s) set in config to do actual internal loading of resource tasks.
  */
 
+import { Fragment } from './fragment';
 import M3U8Parser from './m3u8-parser';
 import { ErrorDetails, ErrorTypes } from '../errors';
 import { Events } from '../events';
 import { PlaylistContextType, PlaylistLevelType } from '../types/loader';
 import { AttrList } from '../utils/attr-list';
 import { computeReloadInterval } from '../utils/level-helper';
+import type { Base, MediaFragment } from './fragment';
 import type { LevelDetails } from './level-details';
-import type { LoaderConfig, RetryConfig } from '../config';
+import type {
+  InitSegmentOption,
+  InitSegmentsConfig,
+  LoaderConfig,
+  RetryConfig,
+} from '../config';
 import type Hls from '../hls';
 import type { NetworkComponentAPI } from '../types/component-api';
 import type {
@@ -524,6 +531,12 @@ class PlaylistLoader implements NetworkComponentAPI {
       0,
       this.variableList,
     );
+    applyConfiguredInitSegment(
+      levelDetails,
+      this.hls.config.initSegments,
+      levelType,
+      levelId,
+    );
 
     // We have done our first request (Manifest-type) and receive
     // not a master playlist but a chunk-list (track/level)
@@ -779,6 +792,146 @@ class PlaylistLoader implements NetworkComponentAPI {
         break;
     }
   }
+}
+
+type NormalizedInitSegmentOption = {
+  data?: Uint8Array;
+  url?: string;
+};
+
+function applyConfiguredInitSegment(
+  levelDetails: LevelDetails,
+  initSegments: InitSegmentsConfig | undefined,
+  levelType: PlaylistLevelType,
+  levelId: number,
+): void {
+  if (!initSegments) {
+    return;
+  }
+  const configuredOption = initSegments[levelType] ?? initSegments.default;
+  const normalized = normalizeInitSegmentOption(configuredOption);
+  if (!normalized) {
+    return;
+  }
+
+  if (
+    levelDetails.fragments.some(
+      (frag) => frag?.initSegment && frag.initSegment !== null,
+    )
+  ) {
+    return;
+  }
+
+  const base = resolveFragmentBase(levelDetails);
+  const initFrag = new Fragment(levelType, base);
+  initFrag.sn = 'initSegment';
+  initFrag.level = levelId;
+
+  const referenceFrag = findFirstMediaFragment(levelDetails.fragments);
+  if (referenceFrag) {
+    initFrag.cc = referenceFrag.cc;
+    if (referenceFrag.levelkeys) {
+      initFrag.levelkeys = referenceFrag.levelkeys;
+    }
+  } else {
+    initFrag.cc = levelDetails.startCC || 0;
+  }
+
+  if (normalized.url) {
+    initFrag.relurl = normalized.url;
+  }
+
+  if (normalized.data) {
+    initFrag.configuredInitSegmentData = normalized.data;
+  }
+
+  levelDetails.fragments.forEach((frag) => {
+    if (frag && !frag.initSegment) {
+      frag.initSegment = initFrag;
+    }
+  });
+
+  const { fragmentHint } = levelDetails;
+  if (fragmentHint && !fragmentHint.initSegment) {
+    fragmentHint.initSegment = initFrag;
+  }
+}
+
+function normalizeInitSegmentOption(
+  option: InitSegmentOption | undefined,
+): NormalizedInitSegmentOption | null {
+  if (!option) {
+    return null;
+  }
+  const directData = toUint8Array(option);
+  if (directData) {
+    return { data: directData };
+  }
+
+  if (typeof option === 'object') {
+    const candidate = option as {
+      data?: ArrayBufferLike | ArrayLike<number>;
+      url?: string;
+    };
+    const data = toUint8Array(candidate.data);
+    const url = typeof candidate.url === 'string' ? candidate.url : undefined;
+    if (!data && !url) {
+      return null;
+    }
+    return { data, url };
+  }
+
+  return null;
+}
+
+function toUint8Array(
+  value: InitSegmentOption | ArrayBufferLike | ArrayLike<number> | undefined,
+): Uint8Array | undefined {
+  if (!value) {
+    return undefined;
+  }
+  if (value instanceof Uint8Array) {
+    return value;
+  }
+  if (typeof ArrayBuffer !== 'undefined') {
+    if (value instanceof ArrayBuffer) {
+      return new Uint8Array(value);
+    }
+    if (
+      typeof SharedArrayBuffer !== 'undefined' &&
+      value instanceof SharedArrayBuffer
+    ) {
+      return new Uint8Array(value);
+    }
+    if (ArrayBuffer.isView?.(value)) {
+      const view = value as ArrayBufferView;
+      return new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+    }
+  }
+  if (Array.isArray(value)) {
+    return new Uint8Array(value);
+  }
+  return undefined;
+}
+
+function resolveFragmentBase(levelDetails: LevelDetails): Base | string {
+  const reference = findFirstMediaFragment(levelDetails.fragments);
+  if (reference) {
+    return reference.base;
+  }
+  return levelDetails.url;
+}
+
+function findFirstMediaFragment(
+  fragments: MediaFragment[],
+): MediaFragment | null {
+  for (let i = 0; i < fragments.length; i++) {
+    const frag = fragments[i];
+    if (frag) {
+      return frag;
+    }
+  }
+  return null;
 }
 
 export default PlaylistLoader;

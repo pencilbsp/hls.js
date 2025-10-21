@@ -634,6 +634,24 @@ export default class BaseStreamController
   }
 
   protected _loadInitSegment(fragment: Fragment, level: Level) {
+    const configuredInitData = fragment.configuredInitSegmentData;
+    if (configuredInitData) {
+      const now = self.performance.now();
+      const payloadView = configuredInitData.slice();
+      const arrayBuffer = payloadView.buffer;
+      const stats = fragment.stats;
+      stats.loading.start = stats.loading.first = stats.loading.end = now;
+      stats.loaded = stats.total = configuredInitData.byteLength;
+      const data: FragLoadedData = {
+        frag: fragment,
+        part: null,
+        payload: arrayBuffer,
+        networkDetails: null,
+      };
+      this.completeInitSegmentLoad(data);
+      return;
+    }
+
     this._doFragLoad(fragment, level)
       .then((data) => {
         const frag = data?.frag;

@@ -1782,6 +1782,8 @@ export class Fragment extends BaseSegment {
     // (undocumented)
     cc: number;
     // (undocumented)
+    configuredInitSegmentData?: Uint8Array;
+    // (undocumented)
     data?: Uint8Array;
     // (undocumented)
     get decryptdata(): LevelKey | null;
@@ -2249,6 +2251,7 @@ export type HlsConfig = {
     enableWorker: boolean;
     workerPath: null | string;
     enableSoftwareAES: boolean;
+    onHlsInit?: (hls: Hls) => void;
     minAutoBitrate: number;
     ignoreDevicePixelRatio: boolean;
     maxDevicePixelRatio: number;
@@ -2277,6 +2280,7 @@ export type HlsConfig = {
     interstitialAppendInPlace: boolean;
     interstitialLiveLookAhead: number;
     assetPlayerId?: string;
+    initSegments?: InitSegmentsConfig;
     useMediaCapabilities: boolean;
     abrController: typeof AbrController;
     bufferController: typeof BufferController;
@@ -5001,6 +5005,10 @@ export class XhrLoader implements Loader<LoaderContext> {
     // (undocumented)
     stats: LoaderStats;
 }
+
+// Warnings were encountered during analysis:
+//
+// src/config.ts:348:3 - (ae-forgotten-export) The symbol "InitSegmentsConfig" needs to be exported by the entry point hls.d.ts
 
 // (No @packageDocumentation comment for this package)
 

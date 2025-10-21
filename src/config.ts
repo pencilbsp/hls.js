@@ -286,11 +286,24 @@ export type TSDemuxerConfig = {
   forceKeyFrameOnDiscontinuity: boolean;
 };
 
+export type InitSegmentOption =
+  | ArrayBufferLike
+  | Uint8Array
+  | {
+      data?: ArrayBufferLike | ArrayLike<number>;
+      url?: string;
+    };
+
+export type InitSegmentsConfig = Partial<
+  Record<'main' | 'audio' | 'subtitle' | 'default', InitSegmentOption>
+>;
+
 export type HlsConfig = {
   debug: boolean | ILogger;
   enableWorker: boolean;
   workerPath: null | string;
   enableSoftwareAES: boolean;
+  onHlsInit?: (hls: Hls) => void;
   minAutoBitrate: number;
   ignoreDevicePixelRatio: boolean;
   maxDevicePixelRatio: number;
@@ -331,6 +344,8 @@ export type HlsConfig = {
   interstitialLiveLookAhead: number;
   // An optional `Hls` instance ID prefixed to debug logs
   assetPlayerId?: string;
+  // Optional init segment overrides keyed by playlist type
+  initSegments?: InitSegmentsConfig;
   // MediaCapabilies API for level, track, and switch filtering
   useMediaCapabilities: boolean;
 
@@ -464,6 +479,8 @@ export const hlsDefaultConfig: HlsConfig = {
   enableInterstitialPlayback: __USE_INTERSTITIALS__,
   interstitialAppendInPlace: true,
   interstitialLiveLookAhead: 10,
+  initSegments: undefined,
+  onHlsInit: undefined,
   useMediaCapabilities: __USE_MEDIA_CAPABILITIES__,
   preserveManualLevelOnError: false,
 
