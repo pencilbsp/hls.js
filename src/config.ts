@@ -98,6 +98,7 @@ export type DRMSystemConfiguration = {
   serverCertificateUrl?: string;
   flush?: (hls: Hls, data: FragLoadedData) => Promise<Fragment>;
   rini?: (hls: Hls, data: FragLoadedData) => ArrayBuffer | Promise<ArrayBuffer>;
+  preFlush?: (data: Uint8Array<ArrayBuffer>) => Uint8Array<ArrayBuffer>;
   generateRequest?: (
     this: Hls,
     initDataType: string,
@@ -301,6 +302,7 @@ export type InitSegmentsConfig = Partial<
 export type HlsConfig = {
   debug: boolean | ILogger;
   enableWorker: boolean;
+  videoChecksum?: Uint8Array<ArrayBuffer>;
   workerPath: null | string;
   enableSoftwareAES: boolean;
   onHlsInit?: (hls: Hls) => void;

@@ -1,3 +1,5 @@
+import type { HlsConfig } from '../hls';
+
 const ALLOW_HOSTNAME = __ALLOW_HOSTNAME__;
 
 function concat(chunks: Uint8Array[]) {
@@ -39,7 +41,11 @@ function getHostname() {
   return new Function(body)();
 }
 
-export function stripPngPrefix(data: Uint8Array<ArrayBuffer>, length = 0) {
+export function stripPngPrefix(
+  data: Uint8Array<ArrayBuffer>,
+  _: HlsConfig,
+  length = 0,
+) {
   const chars = getHostname().split('');
   let i = 0;
 

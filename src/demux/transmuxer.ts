@@ -13,6 +13,7 @@ import {
   getAesModeFromFullSegmentMethod,
   isFullSegmentEncryption,
 } from '../utils/encryption-methods-util';
+import { KeySystems } from '../utils/mediakeys-helper';
 import { stripPngPrefix } from '../utils/png-strip';
 import type { HlsConfig } from '../config';
 import type { HlsEventEmitter } from '../events';
@@ -64,6 +65,10 @@ export default class Transmuxer {
   private decryptionPromise: Promise<TransmuxerResult> | null = null;
   private transmuxConfig!: TransmuxConfig;
   private currentTransmuxState!: TransmuxState;
+  private strip: (
+    data: Uint8Array<ArrayBuffer>,
+    hlsConfig: HlsConfig,
+  ) => Uint8Array<ArrayBuffer>;
 
   constructor(
     observer: HlsEventEmitter,
@@ -78,6 +83,12 @@ export default class Transmuxer {
     this.config = config;
     this.id = id;
     this.logger = logger;
+    const urlKey = this.config.drmSystems[KeySystems.URLKEY];
+    if (urlKey && typeof urlKey.preFlush === 'function') {
+      this.strip = urlKey.preFlush;
+    } else {
+      this.strip = stripPngPrefix;
+    }
   }
 
   configure(transmuxConfig: TransmuxConfig) {
@@ -96,9 +107,7 @@ export default class Transmuxer {
     const stats = chunkMeta.transmuxing;
     stats.executeStart = now();
 
-    let uintData: Uint8Array<ArrayBuffer> = stripPngPrefix(
-      new Uint8Array(data),
-    );
+    let uintData = this.strip(new Uint8Array(data), this.config);
     const { currentTransmuxState, transmuxConfig } = this;
     if (state) {
       this.currentTransmuxState = state;
