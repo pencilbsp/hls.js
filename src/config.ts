@@ -98,7 +98,10 @@ export type DRMSystemConfiguration = {
   serverCertificateUrl?: string;
   flush?: (hls: Hls, data: FragLoadedData) => Promise<Fragment>;
   rini?: (hls: Hls, data: FragLoadedData) => ArrayBuffer | Promise<ArrayBuffer>;
-  preFlush?: (data: Uint8Array<ArrayBuffer>) => Uint8Array<ArrayBuffer>;
+  preFlush?: (
+    data: Uint8Array<ArrayBuffer>,
+    config: HlsConfig,
+  ) => Uint8Array<ArrayBuffer>;
   generateRequest?: (
     this: Hls,
     initDataType: string,
