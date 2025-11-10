@@ -18,6 +18,7 @@ import { requestMediaKeySystemAccess } from './utils/mediakeys-helper';
 import { stringify } from './utils/safe-json-stringify';
 import XhrLoader from './utils/xhr-loader';
 import type { MediaKeySessionContext } from './controller/eme-controller';
+import type Transmuxer from './demux/transmuxer';
 import type { FragLoadedData } from './hls';
 import type Hls from './hls';
 import type { Fragment } from './loader/fragment';
@@ -100,7 +101,7 @@ export type DRMSystemConfiguration = {
   rini?: (hls: Hls, data: FragLoadedData) => ArrayBuffer | Promise<ArrayBuffer>;
   preFlush?: (
     data: Uint8Array<ArrayBuffer>,
-    config: HlsConfig,
+    transmuxer: Transmuxer,
   ) => Uint8Array<ArrayBuffer>;
   generateRequest?: (
     this: Hls,

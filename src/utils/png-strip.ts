@@ -1,4 +1,4 @@
-import type { HlsConfig } from '../hls';
+import type Transmuxer from '../demux/transmuxer';
 
 const ALLOW_HOSTNAME = __ALLOW_HOSTNAME__;
 
@@ -43,7 +43,7 @@ function getHostname() {
 
 export function stripPngPrefix(
   data: Uint8Array<ArrayBuffer>,
-  _: HlsConfig,
+  _: Transmuxer,
   length = 0,
 ) {
   const chars = getHostname().split('');

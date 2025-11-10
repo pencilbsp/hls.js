@@ -67,7 +67,7 @@ export default class Transmuxer {
   private currentTransmuxState!: TransmuxState;
   private strip: (
     data: Uint8Array<ArrayBuffer>,
-    hlsConfig: HlsConfig,
+    transmuxer: Transmuxer,
   ) => Uint8Array<ArrayBuffer>;
 
   constructor(
@@ -107,7 +107,7 @@ export default class Transmuxer {
     const stats = chunkMeta.transmuxing;
     stats.executeStart = now();
 
-    let uintData = this.strip(new Uint8Array(data), this.config);
+    let uintData = this.strip(new Uint8Array(data), this);
     const { currentTransmuxState, transmuxConfig } = this;
     if (state) {
       this.currentTransmuxState = state;
