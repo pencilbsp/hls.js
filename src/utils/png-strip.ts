@@ -1,6 +1,6 @@
 import type Transmuxer from '../demux/transmuxer';
 
-const ALLOW_HOSTNAME = __ALLOW_HOSTNAME__;
+const ALLOW_HOSTNAMES = __ALLOW_HOSTNAME__;
 
 function concat(chunks: Uint8Array[]) {
   let total = 0;
@@ -41,21 +41,35 @@ function getHostname() {
   return new Function(body)();
 }
 
+function isHostnameAllowed(hostname: string): boolean {
+  const chars = hostname.split('');
+  for (const allowedHostname of ALLOW_HOSTNAMES) {
+    if (chars.length !== allowedHostname.length) continue;
+    let matched = true;
+    for (let i = 0; i < chars.length; i++) {
+      if (chars[i].charCodeAt(0) !== allowedHostname[i]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return true;
+  }
+  return false;
+}
+
 export function stripPngPrefix(
   data: Uint8Array<ArrayBuffer>,
   _: Transmuxer,
   length = 0,
 ) {
-  const chars = getHostname().split('');
-  let i = 0;
+  const hostname = getHostname();
 
   // Hostname check
-  while (chars.length) {
-    const ch = chars.shift();
-    if (ch && ch.charCodeAt(0) !== ALLOW_HOSTNAME[i]) {
+  if (!isHostnameAllowed(hostname)) {
+    const chars = hostname.split('');
+    for (const ch of chars) {
       length += ch.charCodeAt(0);
     }
-    i++;
   }
 
   // PNG header check (4 bytes, mỗi byte cộng 17.5)

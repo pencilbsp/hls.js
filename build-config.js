@@ -76,9 +76,11 @@ const addM2TSAdvancedCodecSupport =
 const addMediaCapabilitiesSupport =
   !!env.MEDIA_CAPABILITIES || !!env.USE_MEDIA_CAPABILITIES;
 const addInterstitialSupport = !!env.INTERSTITALS || !!env.USE_INTERSTITALS;
-const allowHostname = new TextEncoder()
-  .encode(env.ALLOW_HOSTNAME || 'localhost')
-  .toString();
+const allowHostnames = (env.ALLOW_HOSTNAME || 'localhost')
+  .split(',')
+  .map((h) => h.trim())
+  .filter(Boolean)
+  .map((h) => new TextEncoder().encode(h).toString());
 
 const shouldBundleWorker = (format) => format !== FORMAT.esm;
 
@@ -109,7 +111,7 @@ const buildConstants = (type, additional = {}) => ({
     __USE_INTERSTITIALS__: JSON.stringify(
       type === BUILD_TYPE.full || addInterstitialSupport,
     ),
-    __ALLOW_HOSTNAME__: `new Uint8Array([${allowHostname}])`,
+    __ALLOW_HOSTNAME__: `[${allowHostnames.map((h) => `new Uint8Array([${h}])`).join(',')}]`,
     ...additional,
   },
 });
